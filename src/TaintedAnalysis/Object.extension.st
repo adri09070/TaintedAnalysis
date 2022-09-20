@@ -23,3 +23,9 @@ Object >> taintWithManager: aTaintManager [
 
 	aTaintManager addTainted: self
 ]
+
+{ #category : #'*TaintedAnalysis' }
+Object >> untaint [
+
+	^ self untaintWithManager: TaintManager defaultInstance
+]

@@ -19,7 +19,8 @@ TaintManager class >> defaultInstance [
 { #category : #tainting }
 TaintManager >> addTainted: anObject [
 
-	taintedSet add: anObject
+	taintedSet add: anObject.
+	"anObject class allInstVarNames do: [ :each | self addTainted: (anObject instVarNamed: each ) ]"
 ]
 
 { #category : #querying }
@@ -32,6 +33,12 @@ TaintManager >> hasObjectTainted: anObject [
 TaintManager >> initialize [
 
 	taintedSet := WeakIdentitySet new
+]
+
+{ #category : #'adding-removing' }
+TaintManager >> removeTainted: anObject [
+
+	taintedSet remove: anObject
 ]
 
 { #category : #accessing }
