@@ -3,29 +3,33 @@ Extension { #name : #Object }
 { #category : #'*TaintedAnalysis' }
 Object >> isTainted [
 
-	^ self isTaintedWithManager: TaintManager defaultInstance
+	^ false
 ]
 
 { #category : #'*TaintedAnalysis' }
-Object >> isTaintedWithManager: aTaintManager [ 
+Object >> isWrapper [
 
-	^ aTaintManager hasObjectTainted: self
+	^ false
 ]
 
 { #category : #'*TaintedAnalysis' }
-Object >> taint [
+Object >> taValue [
 
-	^ self taintWithManager: TaintManager defaultInstance
+	^ self
 ]
 
 { #category : #'*TaintedAnalysis' }
-Object >> taintWithManager: aTaintManager [ 
+Object >> taintWrap [
 
-	aTaintManager addTainted: self
+	| wrapper |
+	wrapper := TaintWrapper new.
+	^ wrapper
+		  target: self;
+		  yourself
 ]
 
 { #category : #'*TaintedAnalysis' }
-Object >> untaint [
+Object >> wrappedObject [
 
-	^ self untaintWithManager: TaintManager defaultInstance
+	^ self
 ]

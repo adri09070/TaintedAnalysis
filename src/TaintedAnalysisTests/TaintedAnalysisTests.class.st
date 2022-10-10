@@ -31,17 +31,18 @@ TaintedAnalysisTests >> testTaintedAddition [
 	| a interpreter c context |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
-		(RBParser parseExpression: ' | a b c |
+		(RBParser parseExpression: ' | a b c  |
 			a := 1.
-			a taint. 
 			b := 2. 
 			c := a + b ').
 
-	7 timesRepeat: [ interpreter stepOver ].
+	5 timesRepeat: [ interpreter stepOver ].
 
 	context := interpreter currentContext.
 
 	a := interpreter currentContext findVariable: #a.
+
+	a taint.
 
 	self assert: a isTainted.
 
@@ -49,7 +50,41 @@ TaintedAnalysisTests >> testTaintedAddition [
 
 	c := context findVariable: #c.
 
-	self assert: c isTainted
+	self assert: c isTainted.
+	self assert: c wrappedObject equals: 3
+]
+
+{ #category : #tests }
+TaintedAnalysisTests >> testTaintedAdditionOfTwoPoints [
+
+	| a interpreter c context |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | a b c  |
+			a := Point x:1 y:5.
+			b := Point x:2 y:3. 
+			c := a + b ').
+
+	8 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+
+	a := interpreter currentContext findVariable: #a.
+	
+	self assert: a wrappedObject x isWrapper.
+
+	a taint.
+
+	self assert: a isTainted.
+
+	interpreter evaluate.
+
+	c := context findVariable: #c.
+
+	self assert: c isTainted.
+	self assert: c wrappedObject equals: 3@8.
+
+	
 ]
 
 { #category : #tests }
@@ -144,6 +179,30 @@ TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithNewObject [
 ]
 
 { #category : #tests }
+TaintedAnalysisTests >> testTaintingLiteralValues [
+
+	| a interpreter context |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | a |
+			a := 1.
+			a + 2').
+
+	3 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+	a := interpreter currentContext findVariable: #a.
+
+	self deny: a isTainted.
+	a taint.
+	interpreter evaluate.
+
+	a := context findVariable: #a.
+
+	self assert: a isTainted
+]
+
+{ #category : #tests }
 TaintedAnalysisTests >> testTaints [
 
 	self deny: obj1 isTainted.
@@ -178,4 +237,26 @@ TaintedAnalysisTests >> testTaintsWithSpecificManager [
 	obj1 taintWithManager: manager.
 
 	self assert: (obj1 isTaintedWithManager: manager)
+]
+
+{ #category : #tests }
+TaintedAnalysisTests >> testWrappingLiteralValues [
+
+	| a interpreter context |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | a |
+			a := 1.').
+
+	2 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+
+	interpreter stepOver.
+
+	a := interpreter currentContext findVariable: #a.
+
+	self assert: a isWrapper.
+	self assert: a wrappedObject equals: 1.
+	self deny: a isTainted
 ]
