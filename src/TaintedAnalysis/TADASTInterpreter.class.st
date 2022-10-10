@@ -67,10 +67,17 @@ TADASTInterpreter >> visitLiteralArrayNode: aRBLiteralArrayNode [
 { #category : #visiting }
 TADASTInterpreter >> visitLiteralNode: aRBLiteralValueNode [
 
-	| wrapper |
+	| wrapper context outerContext |
 	wrapper := TaintWrapper on: aRBLiteralValueNode value.
-	self currentContext receiver isTainted ifTrue: [ 
-		wrapper addTaintFrom: self currentContext receiver ].
+	1 haltIf: [ aRBLiteralValueNode value = 'baz' ].
+	context := self currentContext.
+	self currentContext isBlockContext ifTrue: [ 
+		outerContext := self currentContext methodOrBlock outerContext.
+		[ context sender ~= outerContext ] whileTrue: [ 
+			wrapper addTaintFrom: (context sender receiver).
+			context := context sender ] ].
+	context receiver ifNotNil: [ wrapper addTaintFrom: context receiver ].
+
 	self stackPush: wrapper
 ]
 

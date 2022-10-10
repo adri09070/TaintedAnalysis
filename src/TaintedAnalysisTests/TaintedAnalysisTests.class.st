@@ -20,6 +20,16 @@ TaintedAnalysisTests >> tearDown [
 ]
 
 { #category : #tests }
+TaintedAnalysisTests >> testImplicitReturn [
+	self assert: false.
+]
+
+{ #category : #tests }
+TaintedAnalysisTests >> testNonLocalReturn [ 
+	self assert: false.
+]
+
+{ #category : #tests }
 TaintedAnalysisTests >> testTaintedAddition [
 
 	| a interpreter c context |
@@ -113,6 +123,70 @@ TaintedAnalysisTests >> testTaintedAdditionOfTwoPointsWithTaintedReceiver [
 ]
 
 { #category : #tests }
+TaintedAnalysisTests >> testTaintedComparison [
+
+	| a interpreter c context |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | a b c  |
+			a := 1.
+			b := 2. 
+			c := b = a ').
+
+	5 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+
+	a := interpreter currentContext findVariable: #a.
+
+	a taint.
+
+	self assert: a isTainted.
+
+	interpreter evaluate.
+
+	c := context findVariable: #c.
+
+	self assert: c isTainted.
+	self assert: c wrappedObject equals: false
+]
+
+{ #category : #tests }
+TaintedAnalysisTests >> testTaintedCondition [
+
+	| x interpreter y context |
+	"$y='foo';
+if ($x) { $y = 'bar' } else { $y = 'baz '} 
+print ""y=$y -> "",tainted($y),""\n"";"
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | x y  |
+			x := false.
+			y := ''foo''.
+			x ifTrue: [ y := ''bar'' ] ifFalse: [ y := ''baz'' ]
+			').
+
+	6 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+
+	x := interpreter currentContext findVariable: #x.
+	
+
+	x taint.
+
+	self assert: x isTainted.
+
+	interpreter evaluate.
+	
+	y := context findVariable: #y.
+
+	self assert: y wrappedObject equals: 'baz'.
+	self assert: y isTainted
+	
+]
+
+{ #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectCopyIsTainted [
 
 	| copyObj interpreter context obj1 |
@@ -193,26 +267,31 @@ TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithLiteralValue [
 { #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithNewObject [
 
-	| obj2 interpreter obj1 |
+	| obj2 interpreter obj1 obj3 |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
-		(RBParser parseExpression: ' | obj1 obj2 |
+		(RBParser parseExpression: ' | obj1 obj2 obj3 |
 			obj1 := TAClassForTests new. 
-			obj2 := TAClassForTests new. 
-			obj1 writesFooWithNewObjectOf: obj2. ').
+			obj2 := TAClassForTests new.
+			obj3 := TAClassForTests new.
+			obj3 foo: 4.
+			obj1 writesFooOf: obj2 withFooFrom: obj3 ').
 
-	8 timesRepeat: [ interpreter stepOver ].
+	15 timesRepeat: [ interpreter stepOver ].
 
 	obj1 := interpreter currentContext findVariable: #obj1.
 
 	obj1 taint.
 	obj2 := interpreter currentContext findVariable: #obj2.
+	obj3 := interpreter currentContext findVariable: #obj3.
 
 	interpreter evaluate.
 
 	self deny: obj2 isTainted.
 
-	self assert: obj2 wrappedObject foo isTainted
+	self assert: obj2 wrappedObject foo isTainted.
+	self deny: obj3 isTainted.
+	self deny: obj3 wrappedObject foo isTainted
 ]
 
 { #category : #tests }

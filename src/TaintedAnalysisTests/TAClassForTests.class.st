@@ -26,6 +26,12 @@ TAClassForTests >> writesFooOf: aTAClassForTests [
 ]
 
 { #category : #helper }
+TAClassForTests >> writesFooOf: aFirstObj withFooFrom: aSecondObj [
+
+	aFirstObj foo: aSecondObj foo
+]
+
+{ #category : #helper }
 TAClassForTests >> writesFooWithLiteralArrayOf: aTAClassForTests [
 
 	aTAClassForTests foo: #(1 2 3)
