@@ -54,8 +54,13 @@ TADASTInterpreter >> visitGlobalNode: aRBGlobalNode [
 { #category : #visiting }
 TADASTInterpreter >> visitLiteralArrayNode: aRBLiteralArrayNode [
 
-	super visitLiteralArrayNode: aRBLiteralArrayNode.
-	"self currentContext isTainting ifTrue: [ self stackTop taint ]"
+	| wrapper  size literals|
+	size := aRBLiteralArrayNode contents size.
+	literals := self stackPop: size.
+	wrapper := TaintWrapper on: (self evaluator newArrayWithAll: literals).
+	self currentContext receiver isTainted ifTrue: [ 
+		wrapper addTaintFrom: self currentContext receiver ].
+	self stackPush: wrapper
 	
 ]
 
@@ -64,6 +69,8 @@ TADASTInterpreter >> visitLiteralNode: aRBLiteralValueNode [
 
 	| wrapper |
 	wrapper := TaintWrapper on: aRBLiteralValueNode value.
+	self currentContext receiver isTainted ifTrue: [ 
+		wrapper addTaintFrom: self currentContext receiver ].
 	self stackPush: wrapper
 ]
 
@@ -71,8 +78,7 @@ TADASTInterpreter >> visitLiteralNode: aRBLiteralValueNode [
 TADASTInterpreter >> visitMessageNode: aRBMessageNode [
 
 	| arguments wrappedReceiver receiver method newContext primitiveResult |
-	" Resolve Arguments "
-	"self haltIf: [ aRBMessageNode selector = #isPoint ]."
+	" Resolve Arguments ""self haltIf: [ aRBMessageNode selector = #isPoint ]."
 	arguments := (self stackPop: aRBMessageNode numArgs) reverse.
 	(aRBMessageNode isCascaded and: [ aRBMessageNode isFirstCascaded not ]) 
 		ifTrue: [ self stackPop ].
@@ -107,6 +113,8 @@ TADASTInterpreter >> visitMessageNode: aRBMessageNode [
 		primitiveResult := TaintWrapper on: primitiveResult.
 		primitiveResult addTaintFrom: wrappedReceiver.
 		arguments do: [ :arg | primitiveResult addTaintFrom: arg ].
+		aRBMessageNode selector = #basicNew ifTrue: [ 
+			primitiveResult addTaintFromParentContexts: currentContext ].
 		self stackPush: primitiveResult.
 		^ self ]
 			on: DASTPrimitiveFailed

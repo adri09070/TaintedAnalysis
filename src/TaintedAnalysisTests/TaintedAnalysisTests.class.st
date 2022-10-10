@@ -1,10 +1,6 @@
 Class {
 	#name : #TaintedAnalysisTests,
 	#superclass : #TestCase,
-	#instVars : [
-		'oldTainted',
-		'obj1'
-	],
 	#category : #TaintedAnalysisTests
 }
 
@@ -12,8 +8,6 @@ Class {
 TaintedAnalysisTests >> setUp [
 
 	super setUp.
-	obj1 := TAClassForTests new.
-	oldTainted := TaintManager defaultInstance taintedSet
 
 	"Put here a common initialization logic for tests"
 ]
@@ -55,7 +49,38 @@ TaintedAnalysisTests >> testTaintedAddition [
 ]
 
 { #category : #tests }
-TaintedAnalysisTests >> testTaintedAdditionOfTwoPoints [
+TaintedAnalysisTests >> testTaintedAdditionOfTwoPointsWithTaintedArgument [
+
+	| b interpreter c context |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | a b c  |
+			a := Point x:1 y:5.
+			b := Point x:2 y:3. 
+			c := a + b ').
+
+	13 timesRepeat: [ interpreter stepOver ].
+
+	context := interpreter currentContext.
+
+	b := interpreter currentContext findVariable: #b.
+
+	self assert: b wrappedObject x isWrapper.
+
+	b taint.
+
+	self assert: b isTainted.
+
+	interpreter evaluate.
+
+	c := context findVariable: #c.
+
+	self assert: c isTainted.
+	self assert: c wrappedObject equals: 3 @ 8
+]
+
+{ #category : #tests }
+TaintedAnalysisTests >> testTaintedAdditionOfTwoPointsWithTaintedReceiver [
 
 	| a interpreter c context |
 	interpreter := TADASTInterpreter new.
@@ -90,16 +115,21 @@ TaintedAnalysisTests >> testTaintedAdditionOfTwoPoints [
 { #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectCopyIsTainted [
 
-	| copyObj interpreter context |
+	| copyObj interpreter context obj1 |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
 		(RBParser parseExpression: ' | obj1 copyObj |
-
-	obj1 taint.
+	obj1 := Object new.
 	
 	copyObj := obj1 copy.').
 
+	5 timesRepeat: [ interpreter stepOver ].
+
 	context := interpreter currentContext.
+
+	obj1 := context findVariable: #obj1.
+
+	obj1 taint.
 
 	interpreter evaluate.
 
@@ -111,40 +141,45 @@ TaintedAnalysisTests >> testTaintedObjectCopyIsTainted [
 { #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithLiteralArray [
 
-	| obj2 interpreter |
+	| obj2 interpreter obj1 |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
 		(RBParser parseExpression: ' | obj1 obj2 |
 			obj1 := TAClassForTests new. 
-			obj1 taint. 
 			obj2 := TAClassForTests new. 
 			obj1 writesFooWithLiteralArrayOf: obj2. ').
 
-	10 timesRepeat: [ interpreter stepOver ].
+	8 timesRepeat: [ interpreter stepOver ].
 
+	obj1 := interpreter currentContext findVariable: #obj1. 
+	obj1 taint. 
+	
 	obj2 := interpreter currentContext findVariable: #obj2.
 
 	interpreter evaluate.
 
 	self deny: obj2 isTainted.
 
-	self assert: obj2 foo isTainted.
-	obj2 foo do: [ :each | self assert: each isTainted ]
+	self assert: obj2 wrappedObject foo isTainted.
+	obj2 wrappedObject foo wrappedObject do: [ :each | self assert: each isTainted ]
 ]
 
 { #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithLiteralValue [
 
-	| obj2 interpreter |
+	| obj2 interpreter obj1 |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
 		(RBParser parseExpression: ' | obj1 obj2 |
 			obj1 := TAClassForTests new. 
-			obj1 taint. 
+			
 			obj2 := TAClassForTests new. 
 			obj1 writesFooOf: obj2. ').
 
-	10 timesRepeat: [ interpreter stepOver ].
+	8 timesRepeat: [ interpreter stepOver ].
+	
+	obj1 := interpreter currentContext findVariable: #obj1.
+	obj1 taint. 
 
 	obj2 := interpreter currentContext findVariable: #obj2.
 
@@ -152,30 +187,32 @@ TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithLiteralValue [
 
 	self deny: obj2 isTainted.
 
-	self assert: obj2 foo isTainted
+	self assert: obj2 wrappedObject foo isTainted
 ]
 
 { #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithNewObject [
 
-	| obj2 interpreter |
+	| obj2 interpreter obj1 |
 	interpreter := TADASTInterpreter new.
 	interpreter initializeWithProgram:
 		(RBParser parseExpression: ' | obj1 obj2 |
 			obj1 := TAClassForTests new. 
-			obj1 taint. 
 			obj2 := TAClassForTests new. 
 			obj1 writesFooWithNewObjectOf: obj2. ').
 
-	10 timesRepeat: [ interpreter stepOver ].
+	8 timesRepeat: [ interpreter stepOver ].
 
+	obj1 := interpreter currentContext findVariable: #obj1.
+
+	obj1 taint.
 	obj2 := interpreter currentContext findVariable: #obj2.
 
 	interpreter evaluate.
-	
+
 	self deny: obj2 isTainted.
 
-	self assert: obj2 foo isTainted
+	self assert: obj2 wrappedObject foo isTainted
 ]
 
 { #category : #tests }

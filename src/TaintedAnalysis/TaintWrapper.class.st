@@ -21,6 +21,15 @@ TaintWrapper >> addTaintFrom: aTaintWrapper [
 	taintInfo addAll: aTaintWrapper taintInfo .
 ]
 
+{ #category : #tainting }
+TaintWrapper >> addTaintFromParentContexts: aDASTContext [ 
+|context|
+ context:=aDASTContext .
+	
+	[context isNoMethod ] whileFalse: [self addTaintFrom: context receiver.
+	context := context sender.] 
+]
+
 { #category : #testing }
 TaintWrapper >> initialize [ 
 	super initialize.
@@ -56,7 +65,7 @@ TaintWrapper >> taValue [
 { #category : #'as yet unclassified' }
 TaintWrapper >> taint [
 
-	taintInfo := #tainted
+	taintInfo add: #tainted
 ]
 
 { #category : #accessing }
