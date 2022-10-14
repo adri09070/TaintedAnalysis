@@ -28,7 +28,7 @@ BaselineOfTaintedAnalysis >> baseline: spec [
 		"Packages"
 		spec
 			package: 'TaintedAnalysis'
-			with: [ spec requires: #( 'DASTDebugger' ) ];
+			with: [ spec requires: #( 'DebuggableASTInterpreter' ) ];
 			package: 'TaintedAnalysisTests'
 			with: [ spec requires: #( 'TaintedAnalysis' ) ] ].
 
