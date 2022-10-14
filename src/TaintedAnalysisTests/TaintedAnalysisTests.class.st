@@ -213,6 +213,36 @@ TaintedAnalysisTests >> testTaintedObjectCopyIsTainted [
 ]
 
 { #category : #tests }
+TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithCleanArgument [
+
+	| obj2 interpreter obj1 obj3 |
+	interpreter := TADASTInterpreter new.
+	interpreter initializeWithProgram:
+		(RBParser parseExpression: ' | obj1 obj2 obj3 |
+			obj1 := TAClassForTests new. 
+			obj2 := TAClassForTests new.
+			obj3 := TAClassForTests new.
+			obj3 foo: (Point x:1 y:5).
+			obj1 writesFooOf: obj2 withArg: obj3 foo ').
+
+	15 timesRepeat: [ interpreter stepOver ].
+
+	obj1 := interpreter currentContext findVariable: #obj1.
+
+	obj1 taint.
+	obj2 := interpreter currentContext findVariable: #obj2.
+	obj3 := interpreter currentContext findVariable: #obj3.
+
+	interpreter evaluate.
+
+	self deny: obj2 isTainted.
+
+	self assert: obj2 wrappedObject foo isTainted.
+	self deny: obj3 isTainted.
+	self deny: obj3 wrappedObject foo isTainted
+]
+
+{ #category : #tests }
 TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithLiteralArray [
 
 	| obj2 interpreter obj1 |
