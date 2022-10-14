@@ -22,12 +22,20 @@ TaintWrapper >> addTaintFrom: aTaintWrapper [
 ]
 
 { #category : #tainting }
-TaintWrapper >> addTaintFromParentContexts: aDASTContext [ 
-|context|
- context:=aDASTContext .
-	
-	[context isNoMethod ] whileFalse: [self addTaintFrom: context receiver.
-	context := context sender.] 
+TaintWrapper >> addTaintFromParentContexts: aDASTContext [
+
+	| context |
+	context := aDASTContext.
+
+	[ context receiver isNil ] whileFalse: [ 
+		self addTaintFrom: context receiver.
+		context := context sender ]
+]
+
+{ #category : #copying }
+TaintWrapper >> copy [
+
+	^ super copy taintInfo: taintInfo copy
 ]
 
 { #category : #testing }

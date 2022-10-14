@@ -274,7 +274,7 @@ TaintedAnalysisTests >> testTaintedObjectWriteOnOtherObjectWithNewObject [
 			obj1 := TAClassForTests new. 
 			obj2 := TAClassForTests new.
 			obj3 := TAClassForTests new.
-			obj3 foo: 4.
+			obj3 foo: (Point x:1 y:5).
 			obj1 writesFooOf: obj2 withFooFrom: obj3 ').
 
 	15 timesRepeat: [ interpreter stepOver ].
@@ -316,43 +316,6 @@ TaintedAnalysisTests >> testTaintingLiteralValues [
 	a := context findVariable: #a.
 
 	self assert: a isTainted
-]
-
-{ #category : #tests }
-TaintedAnalysisTests >> testTaints [
-
-	self deny: obj1 isTainted.
-
-	obj1 taint.
-
-	self assert: obj1 isTainted
-]
-
-{ #category : #tests }
-TaintedAnalysisTests >> testTaintsWithInstanceVariable [
-
-	obj1 foo: Object new.
-
-	self deny: obj1 isTainted.
-	self deny: obj1 foo isTainted.
-
-	obj1 taint.
-
-	self assert: obj1 isTainted.
-	self assert: obj1 foo isTainted
-]
-
-{ #category : #tests }
-TaintedAnalysisTests >> testTaintsWithSpecificManager [
-
-	| manager |
-	manager := TaintManager new.
-
-	self deny: (obj1 isTaintedWithManager: manager).
-
-	obj1 taintWithManager: manager.
-
-	self assert: (obj1 isTaintedWithManager: manager)
 ]
 
 { #category : #tests }

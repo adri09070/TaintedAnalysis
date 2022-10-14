@@ -34,8 +34,10 @@ TADASTInterpreter >> visitAssignmentNode: aRBAssignmentNode [
 
 	| name value wrappedReceiver |
 	name := aRBAssignmentNode variable name.
-	value := self stackTop.
+	value := self stackPop copy.
+	self stackPush: value.
 	wrappedReceiver := currentContext receiver.
+	value addTaintFromParentContexts: self currentContext.
 	self currentContext receiver: wrappedReceiver wrappedObject.
 	self currentContext assignVariable: name value: value.
 	self currentContext receiver: wrappedReceiver
@@ -69,7 +71,6 @@ TADASTInterpreter >> visitLiteralNode: aRBLiteralValueNode [
 
 	| wrapper context outerContext |
 	wrapper := TaintWrapper on: aRBLiteralValueNode value.
-	1 haltIf: [ aRBLiteralValueNode value = 'baz' ].
 	context := self currentContext.
 	self currentContext isBlockContext ifTrue: [ 
 		outerContext := self currentContext methodOrBlock outerContext.
