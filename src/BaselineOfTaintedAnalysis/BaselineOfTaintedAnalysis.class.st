@@ -19,7 +19,7 @@ BaselineOfTaintedAnalysis >> baseline: spec [
 
 	<baseline>
 	spec for: #common do: [ "Dependencies"
-		spec baseline: 'DASTDebugger' with: [ 
+		spec baseline: 'DebuggableASTInterpreter' with: [ 
 			spec
 				loads: 'Debugger';
 				repository:
